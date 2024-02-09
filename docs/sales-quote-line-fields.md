@@ -1,5 +1,3 @@
-<!--
-
 Below is a list of all sales order line fields
 
 "Document Type": 1,
@@ -182,5 +180,3 @@ Below is a list of all sales order line fields
 "Subtype": 0,
 "Price description": "",
 "Attached Doc Count": 0
-
--->
