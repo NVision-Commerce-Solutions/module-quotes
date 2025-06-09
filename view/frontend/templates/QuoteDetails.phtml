@@ -1,22 +1,22 @@
 <?php
 /** @var \Commerce365\Quotes\Block\QuoteDetails  $block */
-$order = $this->getQuote();
-$orderLines = $order["Lines"];
+$order = $block->getQuote();
+$orderLines = $block->safeGet($order, 'Lines', []);
 ?>
 
 <div class="page-title-wrapper">
     <h1 class="page-title">
-        <span class="base" data-ui-id="page-title-wrapper"><?php echo __('Quote #') ?><?php echo $order["No."]; ?> </span>
+        <span class="base" data-ui-id="page-title-wrapper"><?php echo __('Quote #') ?><?php echo $block->safeGet($order, 'No.'); ?> </span>
     </h1>
     <span class="order-status"><?php echo $block->getQuoteStatus($order) ?></span>
     <div class="order-date">
-        <span class="label"><?php echo __('Quote Date:') ?></span> <date><?php echo date_format(date_create($order["Document Date"]),"d-m-Y") ?></date>
+        <span class="label"><?php echo __('Quote Date:') ?></span> <date><?php echo date_format(date_create($block->safeGet($order, 'Document Date')),"d-m-Y") ?></date>
     </div>
 </div>
 
 <div class="actions-toolbar order-actions-toolbar">
     <div class="actions">
-        <a href="<?php echo $order["PDFUrl"] ?>" class="action order" target="_blank">
+        <a href="<?php echo $block->safeGet($order, 'PDFUrl') ?>" class="action order" target="_blank">
             <span><?php echo __('Download PDF') ?></span>
         </a>
     </div>
@@ -43,14 +43,12 @@ $orderLines = $order["Lines"];
 
             <?php
             foreach ($orderLines as $orderLine) {
-                $itemNo = '';
-                if ((int)$orderLine["Type"] === 2)
-                    $itemNo = $orderLine["No."];
-                if ($orderLine["Type"] < 1)
+                $itemNo = ((int)$block->safeGet($orderLine, 'Type') === 2) ? $block->safeGet($orderLine, 'No.') : '';
+                if ($block->safeGet($orderLine, 'Type') < 1)
                     echo '<tbody>
                         <tr id="order-item-row-1">
                             <td class="col name" data-th="Product Name">
-                                <strong class="product name product-item-name">' . $orderLine["Description"] . '</strong>
+                                <strong class="product name product-item-name">' . $block->safeGet($orderLine, 'Description') . '</strong>
                             </td>
                             <td class="col sku" data-th="SKU"></td>
                             <td class="col price" data-th="Price">
@@ -61,36 +59,38 @@ $orderLines = $order["Lines"];
                             </td>
                         </tr>
                     </tbody>';
-                else
+                else {
+                    $qty = max((float)$block->safeGet($orderLine, 'Quantity'), 1);
                     echo '<tbody>
                             <tr id="order-item-row-1">
                                 <td class="col name" data-th="Product Name">
-                                    <strong class="product name product-item-name">' . $orderLine["Description"] . '</strong>
+                                    <strong class="product name product-item-name">' . $block->safeGet($orderLine, 'Description') . '</strong>
                                 </td>
                                 <td class="col sku" data-th="SKU">' . $itemNo . '</td>
                                 <td class="col price" data-th="Price">
                                     <span class="price-excluding-tax" data-label="Excl. Tax">
                                         <span class="cart-price">
-                                            <span class="price">' . $orderLine["Currency Code"] . ' ' . number_format((float)$orderLine["Amount"] / (float)$orderLine["Quantity"], 2, ',', '.') . '</span>
+                                            <span class="price">' . $block->safeGet($orderLine, 'Currency Code') . ' ' . number_format((float)$block->safeGet($orderLine, 'Amount') / $qty, 2, ',', '.') . '</span>
                                         </span>
                                     </span>
                                 </td>
                                 <td class="col qty" data-th="Qty">
                                     <ul class="items-qty">
                                         <li class="item">
-                                            <span class="content">' . $orderLine["Quantity"] . '</span>
+                                            <span class="content">' . $block->safeGet($orderLine, 'Quantity') . '</span>
                                         </li>
                                     </ul>
                                 </td>
                                 <td class="col subtotal" data-th="Subtotal">
                                     <span class="price-excluding-tax" data-label="Excl. Tax">
                                         <span class="cart-price">
-                                            <span class="price">' . $orderLine["Currency Code"] . ' ' . number_format((float)$orderLine["Line Amount"], 2, ',', '.') . '</span>
+                                            <span class="price">' . $block->safeGet($orderLine, 'Currency Code') . ' ' . number_format((float)$block->safeGet($orderLine, 'Line Amount'), 2, ',', '.') . '</span>
                                         </span>
                                     </span>
                                 </td>
                             </tr>
                         </tbody>';
+                }
             }
             ?>
 
@@ -100,7 +100,7 @@ $orderLines = $order["Lines"];
                     <?php echo __('Subtotal') ?>
                 </th>
                 <td class="amount" data-th="Subtotal">
-                    <span class="price"><?php echo $order["Currency Code"]; ?> <?php echo number_format((float)$order["Amount"], 2, ',', '.') ?></span>
+                    <span class="price"><?php echo $block->safeGet($order, 'Currency Code'); ?> <?php echo number_format((float)$block->safeGet($order, 'Amount'), 2, ',', '.') ?></span>
                 </td>
             </tr>
             <tr class="shipping">
@@ -108,7 +108,7 @@ $orderLines = $order["Lines"];
                     <?php echo __('VAT') ?>
                 </th>
                 <td class="amount" data-th="VAT &amp; VAT">
-                    <span class="price"><?php echo $order["Currency Code"]; ?> <?php echo number_format((float)$order["Amount Including VAT"] - (float)$order["Amount"], 2, ',', '.') ?></span>
+                    <span class="price"><?php echo $block->safeGet($order, 'Currency Code'); ?> <?php echo number_format((float)$block->safeGet($order, 'Amount Including VAT') - (float)$block->safeGet($order, 'Amount'), 2, ',', '.') ?></span>
                 </td>
             </tr>
             <tr class="grand_total">
@@ -116,13 +116,12 @@ $orderLines = $order["Lines"];
                     <strong><?php echo __('Grand Total') ?></strong>
                 </th>
                 <td class="amount" data-th="Grand Total">
-                    <strong><span class="price"><?php echo $order["Currency Code"]; ?> <?php echo number_format((float)$order["Amount Including VAT"], 2, ',', '.') ?></span></strong>
+                    <strong><span class="price"><?php echo $block->safeGet($order, 'Currency Code'); ?> <?php echo number_format((float)$block->safeGet($order, 'Amount Including VAT'), 2, ',', '.') ?></span></strong>
                 </td>
             </tr>
             </tfoot>
         </table>
     </div>
-
 
     <div class="actions-toolbar">
         <div class="secondary">
@@ -140,10 +139,10 @@ $orderLines = $order["Lines"];
         <div class="box box-order-shipping-address">
             <strong class="box-title"><span><?php echo __('Shipping Address') ?></span></strong>
             <div class="box-content">
-                <address><?php echo $order["Ship-to Name"]; ?><br/>
-                    <?php echo $order["Ship-to Address"]; ?><br />
-                    <?php echo $order["Ship-to City"]; ?>,  <?php echo $order["Ship-to Post Code"]; ?><br/>
-                    <?php echo $order["Ship-to Country/Region Code"]; ?><br/>
+                <address><?php echo $block->safeGet($order, 'Ship-to Name'); ?><br/>
+                    <?php echo $block->safeGet($order, 'Ship-to Address'); ?><br />
+                    <?php echo $block->safeGet($order, 'Ship-to City'); ?>,  <?php echo $block->safeGet($order, 'Ship-to Post Code'); ?><br/>
+                    <?php echo $block->safeGet($order, 'Ship-to Country/Region Code'); ?><br/>
                 </address>
             </div>
         </div>
@@ -152,7 +151,7 @@ $orderLines = $order["Lines"];
                 <span><?php echo __('Shipping Method') ?></span>
             </strong>
             <div class="box-content">
-                <div><?php echo $order["Shipment Method Code"]; ?></div>
+                <div><?php echo $block->safeGet($order, 'Shipment Method Code'); ?></div>
             </div>
         </div>
         <div class="box box-order-billing-address">
@@ -160,10 +159,10 @@ $orderLines = $order["Lines"];
                 <span><?php echo __('Billing Address') ?></span>
             </strong>
             <div class="box-content">
-                <address><?php echo $order["Bill-to Name"]; ?><br/>
-                    <?php echo $order["Bill-to Address"]; ?><br />
-                    <?php echo $order["Bill-to City"]; ?>,  <?php echo $order["Bill-to Post Code"]; ?><br/>
-                    <?php echo $order["Bill-to Country/Region Code"]; ?><br/>
+                <address><?php echo $block->safeGet($order, 'Bill-to Name'); ?><br/>
+                    <?php echo $block->safeGet($order, 'Bill-to Address'); ?><br />
+                    <?php echo $block->safeGet($order, 'Bill-to City'); ?>,  <?php echo $block->safeGet($order, 'Bill-to Post Code'); ?><br/>
+                    <?php echo $block->safeGet($order, 'Bill-to Country/Region Code'); ?><br/>
                 </address>
             </div>
         </div>
@@ -173,10 +172,9 @@ $orderLines = $order["Lines"];
             </strong>
             <div class="box-content">
                 <dl class="payment-method checkmemo">
-                    <?php echo $order["Payment Method Code"]; ?>
+                    <?php echo $block->safeGet($order, 'Payment Method Code'); ?>
                 </dl>
             </div>
         </div>
     </div>
 </div>
-

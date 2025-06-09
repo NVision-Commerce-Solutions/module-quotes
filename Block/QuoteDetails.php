@@ -50,4 +50,9 @@ class QuoteDetails extends Template
     {
         return $this->getQuoteStatus->execute($quote);
     }
+
+    public function safeGet(array $array, string $key, $default = '')
+    {
+        return $array[$key] ?? $default;
+    }
 }

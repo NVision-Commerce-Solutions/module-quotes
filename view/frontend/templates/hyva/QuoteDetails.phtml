@@ -7,29 +7,29 @@ use Magento\Framework\Escaper;
 /** @var Escaper $escaper */
 
 $order = $block->getQuote();
-$orderLines = $order["Lines"];
+$orderLines = $block->safeGet($order, 'Lines', []);
 ?>
 
 <div class="md:flex md:justify-between items-center mb-3">
     <div class="lg:flex items-center text-center md:text-left">
         <div class="lg:inline-block">
             <h2 class="text-2xl">
-                <span><?= $escaper->escapeHtml(__('Quote # %1', $order["No."])) ?></span>
+                <span><?= $escaper->escapeHtml(__('Quote # %1', $block->safeGet($order, 'No.'))) ?></span>
             </h2>
             <div class="order-date">
                 <span class="label"><?= $escaper->escapeHtml(__('Quote Date:')) ?></span>
-                <date><?php echo date_format(date_create($order["Document Date"]), "d-m-Y") ?></date>
+                <date><?= date_format(date_create($block->safeGet($order, 'Document Date')), "d-m-Y") ?></date>
             </div>
         </div>
         <div class="mt-3 md:mt-0 lg:inline-block lg:ml-5">
-            <span
-                class="order-status inline-block px-3 py-3 border rounded border-container"><?= $block->getQuoteStatus($order) ?></span>
+            <span class="order-status inline-block px-3 py-3 border rounded border-container">
+                <?= $block->getQuoteStatus($order) ?>
+            </span>
         </div>
     </div>
     <div class="actions">
-        <a href="<?= $order["PDFUrl"] ?>" class="btn btn-secondary mb-4 order" style="justify-content: center;"
-            target="_blank">
-            <?= $escaper-> escapeUrl(__('Download PDF')) ?>
+        <a href="<?= $block->safeGet($order, 'PDFUrl') ?>" class="btn btn-secondary mb-4 order" style="justify-content: center;" target="_blank">
+            <?= $escaper->escapeHtml(__('Download PDF')) ?>
         </a>
     </div>
 </div>
@@ -45,7 +45,6 @@ $orderLines = $order["Lines"];
     <div class="p4 card">
         <table id="my-orders-table" class="w-full border-collapse">
             <caption class="sr-only"><?= $escaper->escapeHtml(__('Items Quoted')) ?></caption>
-
             <thead class="hidden md:table-header-group bg-gray-100">
             <tr>
                 <th class="p-2 text-left"><?= __('Product Name') ?></th>
@@ -55,18 +54,17 @@ $orderLines = $order["Lines"];
                 <th class="p-2 text-right"><?= __('Subtotal') ?></th>
             </tr>
             </thead>
-
             <tbody>
             <?php foreach ($orderLines as $orderLine): ?>
                 <?php
-                $itemNo = ((int)$orderLine["Type"] > 0) ? $orderLine["No."] : '';
-                $isProduct = (int)$orderLine["Type"] > 0;
-                $qty = max((float)$orderLine["Quantity"], 1);
+                $itemNo = ((int)$block->safeGet($orderLine, 'Type') > 0) ? $block->safeGet($orderLine, 'No.') : '';
+                $isProduct = (int)$block->safeGet($orderLine, 'Type') > 0;
+                $qty = max((float)$block->safeGet($orderLine, 'Quantity'), 1);
                 ?>
                 <tr class="block md:table-row border-b md:border-0 even:bg-gray-50">
                     <td class="block md:table-cell p-2 md:align-top">
                         <span class="md:hidden font-medium"><?= __('Product Name') ?>: </span>
-                        <strong><?= $escaper->escapeHtml($orderLine["Description"]) ?></strong>
+                        <strong><?= $escaper->escapeHtml($block->safeGet($orderLine, 'Description')) ?></strong>
                     </td>
                     <td class="block md:table-cell p-2 md:align-top">
                         <span class="md:hidden font-medium"><?= __('SKU') ?>: </span>
@@ -75,48 +73,47 @@ $orderLines = $order["Lines"];
                     <td class="block md:table-cell p-2 md:align-top">
                         <span class="md:hidden font-medium"><?= __('Price') ?>: </span>
                         <?php if ($isProduct): ?>
-                            <?= $orderLine["Currency Code"] ?>
-                            <?= number_format((float)$orderLine["Amount"] / $qty, 2, ',', '.') ?>
+                            <?= $block->safeGet($orderLine, 'Currency Code') ?>
+                            <?= number_format((float)$block->safeGet($orderLine, 'Amount') / $qty, 2, ',', '.') ?>
                         <?php endif; ?>
                     </td>
                     <td class="block md:table-cell text-right p-2 md:align-top">
                         <span class="md:hidden font-medium"><?= __('Qty') ?>: </span>
-                        <?= $escaper->escapeHtml($orderLine["Quantity"]) ?>
+                        <?= $escaper->escapeHtml($block->safeGet($orderLine, 'Quantity')) ?>
                     </td>
                     <td class="block md:table-cell p-2 text-right md:align-top">
                         <span class="md:hidden font-medium"><?= __('Subtotal') ?>: </span>
                         <?php if ($isProduct): ?>
-                            <?= $orderLine["Currency Code"] ?>
-                            <?= number_format((float)$orderLine["Line Amount"], 2, ',', '.') ?>
+                            <?= $block->safeGet($orderLine, 'Currency Code') ?>
+                            <?= number_format((float)$block->safeGet($orderLine, 'Line Amount'), 2, ',', '.') ?>
                         <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
-
             <tfoot class="bg-gray-100">
             <tr>
                 <td colspan="4" class="hidden md:table-cell text-right p-2 font-medium"><?= __('Subtotal') ?></td>
                 <td class="p-2 text-right font-medium">
                     <span class="md:hidden block"><?= __('Subtotal') ?>: </span>
-                    <?= $order["Currency Code"] ?>
-                    <?= number_format((float)$order["Amount"], 2, ',', '.') ?>
+                    <?= $block->safeGet($order, 'Currency Code') ?>
+                    <?= number_format((float)$block->safeGet($order, 'Amount'), 2, ',', '.') ?>
                 </td>
             </tr>
             <tr>
                 <td colspan="4" class="hidden md:table-cell text-right p-2 font-medium"><?= __('VAT') ?></td>
                 <td class="p-2 text-right font-medium">
                     <span class="md:hidden block"><?= __('VAT') ?>: </span>
-                    <?= $order["Currency Code"] ?>
-                    <?= number_format((float)$order["Amount Including VAT"] - (float)$order["Amount"], 2, ',', '.') ?>
+                    <?= $block->safeGet($order, 'Currency Code') ?>
+                    <?= number_format((float)$block->safeGet($order, 'Amount Including VAT') - (float)$block->safeGet($order, 'Amount'), 2, ',', '.') ?>
                 </td>
             </tr>
             <tr class="font-semibold">
                 <td colspan="4" class="hidden md:table-cell text-right p-2"><?= __('Grand Total') ?></td>
                 <td class="p-2 text-right">
                     <span class="md:hidden block"><?= __('Grand Total') ?>: </span>
-                    <?= $order["Currency Code"] ?>
-                    <?= number_format((float)$order["Amount Including VAT"], 2, ',', '.') ?>
+                    <?= $block->safeGet($order, 'Currency Code') ?>
+                    <?= number_format((float)$block->safeGet($order, 'Amount Including VAT'), 2, ',', '.') ?>
                 </td>
             </tr>
             </tfoot>
@@ -129,8 +126,6 @@ $orderLines = $order["Lines"];
             </div>
         </div>
     </div>
-
-
 </div>
 <div class="mt-8">
     <div class="block-title mb-2">
@@ -141,26 +136,26 @@ $orderLines = $order["Lines"];
             <div class="order-shipping-address">
                 <strong class="block text-lg mb-2"><?= $escaper->escapeHtml(__('Shipping Address')) ?></strong>
                 <div class="box-content">
-                    <address class="not-italic"><?= $order["Ship-to Name"]; ?><br />
-                        <?= $order["Ship-to Address"]; ?><br />
-                        <?= $order["Ship-to City"]; ?>, <?= $order["Ship-to Post Code"]; ?><br />
-                        <?= $order["Ship-to Country/Region Code"]; ?><br />
+                    <address class="not-italic"><?= $block->safeGet($order, 'Ship-to Name') ?><br />
+                        <?= $block->safeGet($order, 'Ship-to Address') ?><br />
+                        <?= $block->safeGet($order, 'Ship-to City') ?>, <?= $block->safeGet($order, 'Ship-to Post Code') ?><br />
+                        <?= $block->safeGet($order, 'Ship-to Country/Region Code') ?><br />
                     </address>
                 </div>
             </div>
             <div class="order-shipping-method">
                 <strong class="block text-lg mb-2"><?= $escaper->escapeHtml(__('Shipping Method')) ?></strong>
                 <div class="box-content">
-                    <div><?= $order["Shipment Method Code"]; ?></div>
+                    <div><?= $block->safeGet($order, 'Shipment Method Code') ?></div>
                 </div>
             </div>
             <div class="order-billing-address">
                 <strong class="block text-lg mb-2"><?= $escaper->escapeHtml(__('Billing Address')) ?></strong>
                 <div class="box-content">
-                    <address class="not-italic"><?= $order["Bill-to Name"]; ?><br />
-                        <?= $order["Bill-to Address"]; ?><br />
-                        <?= $order["Bill-to City"]; ?>, <?= $order["Bill-to Post Code"]; ?><br />
-                        <?= $order["Bill-to Country/Region Code"]; ?><br />
+                    <address class="not-italic"><?= $block->safeGet($order, 'Bill-to Name') ?><br />
+                        <?= $block->safeGet($order, 'Bill-to Address') ?><br />
+                        <?= $block->safeGet($order, 'Bill-to City') ?>, <?= $block->safeGet($order, 'Bill-to Post Code') ?><br />
+                        <?= $block->safeGet($order, 'Bill-to Country/Region Code') ?><br />
                     </address>
                 </div>
             </div>
@@ -168,7 +163,7 @@ $orderLines = $order["Lines"];
                 <strong class="block text-lg mb-2"><?= $escaper->escapeHtml(__('Payment Method')) ?></strong>
                 <div class="box-content">
                     <dl class="payment-method checkmemo">
-                        <?php echo $order["Payment Method Code"]; ?>
+                        <?= $block->safeGet($order, 'Payment Method Code') ?>
                     </dl>
                 </div>
             </div>
